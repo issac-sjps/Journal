@@ -310,8 +310,7 @@
     from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL }
-    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
+  // Cloudinary 不需要額外 import
 
   const firebaseConfig = {
     apiKey: "AIzaSyDAy3M-n7ZMn7pVxG68orrxWkbpKXaVwHw",
@@ -326,7 +325,7 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
+
   const provider = new GoogleAuthProvider();
 
   let currentUser = null, allEntries = [], currentTags = [], selectedMood = '';
@@ -540,8 +539,14 @@
     try {
       const files=document.getElementById('photo-input').files, photoURLs=[];
       for(const file of files){
-        const sr=ref(storage,`entries/${currentUser.uid}/${Date.now()}_${file.name}`);
-        await uploadBytes(sr,file); photoURLs.push(await getDownloadURL(sr));
+        const fd=new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', 'journal_upload');
+        fd.append('folder', `journal/${currentUser.uid}`);
+        const res=await fetch('https://api.cloudinary.com/v1_1/myjournalweb/image/upload',{method:'POST',body:fd});
+        const data=await res.json();
+        if(data.secure_url) photoURLs.push(data.secure_url);
+        else throw new Error(data.error?.message||'上傳失敗');
       }
       await addDoc(collection(db,'entries'),{
         uid:currentUser.uid,
