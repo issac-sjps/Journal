@@ -308,7 +308,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, serverTimestamp }
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
   // Cloudinary 不需要額外 import
 
@@ -368,8 +368,9 @@
     const c = document.getElementById('entries-container');
     c.innerHTML = '<div class="loading">loading…</div>';
     try {
-      const snap = await getDocs(query(collection(db,'entries'), where('uid','==',currentUser.uid), orderBy('date','desc')));
-      allEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const snap = await getDocs(query(collection(db,'entries'), where('uid','==',currentUser.uid)));
+      allEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.date||'').localeCompare(a.date||''));
       renderEntries(allEntries);
     } catch(e) {
       c.innerHTML = '<div class="loading">載入失敗：' + e.message + '</div>';
