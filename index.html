@@ -1,1 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的日記</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #f7f4ef;
+      --bg2: #eee9e0;
+      --ink: #1a1710;
+      --ink2: #5a5448;
+      --ink3: #9a9080;
+      --accent: #c0392b;
+      --accent2: #e8c547;
+      --card: #ffffff;
+      --border: #ddd8ce;
+      --shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Noto Serif TC', serif;
+      min-height: 100vh;
+    }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--ink);
+      position: relative;
+      overflow: hidden;
+    }
+    #auth-screen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 40px,
+        rgba(255,255,255,0.02) 40px,
+        rgba(255,255,255,0.02) 41px
+      );
+    }
+    .auth-box {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 48px 40px;
+      max-width: 360px;
+      width: 90%;
+    }
+    .auth-box h1 {
+      font-size: 42px;
+      color: #f7f4ef;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .auth-box p {
+      color: #5a5448;
+      font-size: 14px;
+      margin-bottom: 40px;
+      font-family: 'DM Mono', monospace;
+    }
+    .auth-year {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: #3a342a;
+      letter-spacing: 0.2em;
+      margin-bottom: 16px;
+    }
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 14px 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 15px;
+      font-family: 'Noto Serif TC', serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .btn-google:hover { background: #a93226; transform: translateY(-1px); }
+
+    /* ── MAIN APP ── */
+    #app { display: none; min-height: 100vh; }
+
+    header {
+      background: var(--ink);
+      color: #f7f4ef;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-title {
+      font-size: 18px;
+      letter-spacing: 0.05em;
+    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid #3a342a;
+      cursor: pointer;
+    }
+    .btn-signout {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: #5a5448;
+      background: none;
+      border: 1px solid #3a342a;
+      padding: 4px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+    }
+    .btn-signout:hover { color: #f7f4ef; border-color: #5a5448; }
+
+    .container { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+
+    /* ── NEW ENTRY BUTTON ── */
+    .fab {
+      position: fixed;
+      bottom: 28px;
+      right: 24px;
+      width: 56px; height: 56px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(192,57,43,0.4);
+      transition: all 0.2s;
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .fab:hover { transform: scale(1.1); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(10,8,5,0.7);
+      z-index: 300;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card);
+      width: 100%;
+      max-width: 720px;
+      max-height: 92vh;
+      border-radius: 16px 16px 0 0;
+      overflow-y: auto;
+      padding: 28px 24px 40px;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .btn-close {
+      background: none; border: none;
+      font-size: 22px; cursor: pointer;
+      color: var(--ink3); line-height: 1;
+    }
+
+    /* ── FORM ── */
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: var(--ink3);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    input[type="text"], input[type="date"], textarea, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Noto Serif TC', serif;
+      font-size: 15px;
+      background: var(--bg);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { min-height: 160px; resize: vertical; line-height: 1.7; }
+
+    .mood-row {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .mood-btn {
+      font-size: 22px;
+      background: var(--bg2);
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mood-btn.selected { border-color: var(--accent); background: #fff0ee; }
+
+    .tag-input-row { display: flex; gap: 8px; }
+    .tag-input-row input { flex: 1; }
+    .btn-add-tag {
+      padding: 12px 16px;
+      background: var(--ink);
+      color: #f7f4ef;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .tags-preview { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .tag-chip {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      padding: 3px 10px;
+      background: var(--bg2);
+      border-radius: 20px;
+      display: flex; align-items: center; gap: 4px;
+      cursor: pointer;
+    }
+    .tag-chip:hover { background: #fde8e8; }
+
+    .photo-preview {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .photo-preview img {
+      width: 72px; height: 72px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .privacy-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toggle {
+      position: relative;
+      width: 44px; height: 24px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    .btn-save {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: 'Noto Serif TC', serif;
+      cursor: pointer;
+      margin-top: 8px;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+    .btn-save:hover { background: #a93226; }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex; gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input {
+      flex: 1; min-width: 160px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Noto Serif TC', serif;
+      background: var(--card);
+      font-size: 14px;
+      outline: none;
+    }
+    .filter-bar input:focus { border-color: var(--accent); }
+
+    /* ── ENTRY CARDS ── */
+    .entries-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .entry-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+      cursor: pointer;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .entry-card:hover { border-left-color: var(--accent); transform: translateX(3px); }
+    .entry-card.private { border-left-color: var(--accent2); }
+
+    .entry-meta {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .entry-date {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--ink3);
+      letter-spacing: 0.1em;
+    }
+    .entry-mood { font-size: 16px; }
+    .entry-private-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      padding: 2px 7px;
+      background: #fff8e1;
+      color: #b7860b;
+      border-radius: 10px;
+      border: 1px solid #e8c547;
+    }
+
+    .entry-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+    .entry-body {
+      font-size: 14px;
+      color: var(--ink2);
+      line-height: 1.7;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .entry-footer {
+      margin-top: 12px;
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .entry-location {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--ink3);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .entry-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .entry-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      padding: 2px 8px;
+      background: var(--bg2);
+      border-radius: 10px;
+      color: var(--ink2);
+    }
+    .entry-photos {
+      display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .entry-photos img {
+      width: 64px; height: 64px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .entry-delete {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--ink3);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .entry-card:hover .entry-delete { opacity: 1; }
+    .entry-delete:hover { color: var(--accent); }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--ink3);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+    .empty p { font-size: 14px; font-family: 'DM Mono', monospace; }
+
+    /* ── LOADING ── */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--ink3);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 90px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: #f7f4ef;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 500;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 480px) {
+      .modal { padding: 20px 16px 32px; }
+      .auth-box { padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-year">✦ JOURNAL ✦</div>
+    <h1>我的日記</h1>
+    <p>記錄每一個值得留下的瞬間</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#fff" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#fff" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#fff" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      使用 Google 帳號登入
+    </button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header>
+    <span class="header-title">✦ 我的日記</span>
+    <div class="header-right">
+      <img id="user-avatar" class="avatar" src="" alt="" style="display:none" />
+      <button class="btn-signout" onclick="signOut()">登出</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="filter-bar">
+      <input type="text" id="search-input" placeholder="搜尋日記內容、標籤、地點…" oninput="filterEntries()" />
+    </div>
+    <div id="entries-container" class="entries-list">
+      <div class="loading">loading…</div>
+    </div>
+  </div>
+
+  <button class="fab" onclick="openModal()" title="新增日記">＋</button>
+</div>
+
+<!-- WRITE MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">新增日記</span>
+      <button class="btn-close" onclick="closeModal()">×</button>
+    </div>
+
+    <div class="form-group">
+      <label>日期</label>
+      <input type="date" id="entry-date" />
+    </div>
+
+    <div class="form-group">
+      <label>標題</label>
+      <input type="text" id="entry-title" placeholder="今天的主題…" />
+    </div>
+
+    <div class="form-group">
+      <label>內容</label>
+      <textarea id="entry-content" placeholder="寫下今天的故事…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>心情</label>
+      <div class="mood-row" id="mood-row">
+        <button class="mood-btn" data-mood="😊" onclick="selectMood(this)">😊</button>
+        <button class="mood-btn" data-mood="😢" onclick="selectMood(this)">😢</button>
+        <button class="mood-btn" data-mood="😡" onclick="selectMood(this)">😡</button>
+        <button class="mood-btn" data-mood="😴" onclick="selectMood(this)">😴</button>
+        <button class="mood-btn" data-mood="🥰" onclick="selectMood(this)">🥰</button>
+        <button class="mood-btn" data-mood="😰" onclick="selectMood(this)">😰</button>
+        <button class="mood-btn" data-mood="🤩" onclick="selectMood(this)">🤩</button>
+        <button class="mood-btn" data-mood="😌" onclick="selectMood(this)">😌</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>地點</label>
+      <input type="text" id="entry-location" placeholder="今天在哪裡？" />
+    </div>
+
+    <div class="form-group">
+      <label>標籤</label>
+      <div class="tag-input-row">
+        <input type="text" id="tag-input" placeholder="輸入標籤…" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag()}" />
+        <button class="btn-add-tag" onclick="addTag()">＋</button>
+      </div>
+      <div class="tags-preview" id="tags-preview"></div>
+    </div>
+
+    <div class="form-group">
+      <label>照片</label>
+      <input type="file" id="photo-input" accept="image/*" multiple onchange="previewPhotos()" />
+      <div class="photo-preview" id="photo-preview"></div>
+    </div>
+
+    <div class="form-group">
+      <label>私密日記</label>
+      <div class="privacy-row">
+        <label class="toggle">
+          <input type="checkbox" id="entry-private" />
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="font-size:13px;color:var(--ink2)">只有自己看得到</span>
+      </div>
+    </div>
+
+    <button class="btn-save" id="save-btn" onclick="saveEntry()">儲存日記</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL }
+    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDAy3M-n7ZMn7pVxG68orrxWkbpKXaVwHw",
+    authDomain: "journal-f1e55.firebaseapp.com",
+    projectId: "journal-f1e55",
+    storageBucket: "journal-f1e55.firebasestorage.app",
+    messagingSenderId: "738988925026",
+    appId: "1:738988925026:web:4382e4a262148640a2b13b",
+    measurementId: "G-9EEBLB1VD5"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+  const provider = new GoogleAuthProvider();
+
+  let currentUser = null;
+  let allEntries = [];
+  let currentTags = [];
+  let selectedMood = '';
+
+  // ── AUTH ──
+  window.signInWithGoogle = async () => {
+    try { await signInWithPopup(auth, provider); }
+    catch(e) { showToast('登入失敗：' + e.message); }
+  };
+
+  window.signOut = async () => {
+    await fbSignOut(auth);
+  };
+
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      const av = document.getElementById('user-avatar');
+      if (user.photoURL) { av.src = user.photoURL; av.style.display = 'block'; }
+      loadEntries();
+    } else {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
+  });
+
+  // ── LOAD ENTRIES ──
+  async function loadEntries() {
+    const container = document.getElementById('entries-container');
+    container.innerHTML = '<div class="loading">loading…</div>';
+    try {
+      const q = query(
+        collection(db, 'entries'),
+        where('uid', '==', currentUser.uid),
+        orderBy('date', 'desc')
+      );
+      const snap = await getDocs(q);
+      allEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderEntries(allEntries);
+    } catch(e) {
+      container.innerHTML = '<div class="loading">載入失敗：' + e.message + '</div>';
+    }
+  }
+
+  function renderEntries(entries) {
+    const container = document.getElementById('entries-container');
+    if (!entries.length) {
+      container.innerHTML = `<div class="empty"><div class="empty-icon">📖</div><p>還沒有日記，點擊 ＋ 開始寫吧</p></div>`;
+      return;
+    }
+    container.innerHTML = entries.map(e => `
+      <div class="entry-card ${e.isPrivate ? 'private' : ''}" onclick="toggleCard(event,'${e.id}')">
+        <div class="entry-meta">
+          <span class="entry-date">${e.date || ''}</span>
+          ${e.mood ? `<span class="entry-mood">${e.mood}</span>` : ''}
+          ${e.isPrivate ? '<span class="entry-private-badge">🔒 私密</span>' : ''}
+          <button class="entry-delete" onclick="deleteEntry(event,'${e.id}')" title="刪除">🗑</button>
+        </div>
+        <div class="entry-title">${e.title || '(無標題)'}</div>
+        <div class="entry-body">${e.content || ''}</div>
+        ${e.photos && e.photos.length ? `<div class="entry-photos">${e.photos.map(p=>`<img src="${p}" loading="lazy"/>`).join('')}</div>` : ''}
+        <div class="entry-footer">
+          ${e.location ? `<span class="entry-location">📍 ${e.location}</span>` : ''}
+          <div class="entry-tags">${(e.tags||[]).map(t=>`<span class="entry-tag"># ${t}</span>`).join('')}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── SEARCH / FILTER ──
+  window.filterEntries = () => {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    if (!q) { renderEntries(allEntries); return; }
+    const filtered = allEntries.filter(e =>
+      (e.title||'').toLowerCase().includes(q) ||
+      (e.content||'').toLowerCase().includes(q) ||
+      (e.location||'').toLowerCase().includes(q) ||
+      (e.tags||[]).some(t => t.toLowerCase().includes(q))
+    );
+    renderEntries(filtered);
+  };
+
+  // ── MODAL ──
+  window.openModal = () => {
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('entry-date').value = new Date().toISOString().slice(0,10);
+    currentTags = [];
+    selectedMood = '';
+    document.getElementById('tags-preview').innerHTML = '';
+    document.getElementById('photo-preview').innerHTML = '';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  };
+  window.closeModal = () => document.getElementById('modal').classList.remove('open');
+
+  window.selectMood = (btn) => {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMood = btn.dataset.mood;
+  };
+
+  window.addTag = () => {
+    const input = document.getElementById('tag-input');
+    const val = input.value.trim();
+    if (!val || currentTags.includes(val)) { input.value=''; return; }
+    currentTags.push(val);
+    input.value = '';
+    const prev = document.getElementById('tags-preview');
+    prev.innerHTML = currentTags.map((t,i) =>
+      `<span class="tag-chip" onclick="removeTag(${i})"># ${t} ×</span>`
+    ).join('');
+  };
+
+  window.removeTag = (i) => {
+    currentTags.splice(i, 1);
+    const prev = document.getElementById('tags-preview');
+    prev.innerHTML = currentTags.map((t,j) =>
+      `<span class="tag-chip" onclick="removeTag(${j})"># ${t} ×</span>`
+    ).join('');
+  };
+
+  window.previewPhotos = () => {
+    const files = document.getElementById('photo-input').files;
+    const prev = document.getElementById('photo-preview');
+    prev.innerHTML = '';
+    Array.from(files).forEach(f => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f);
+      prev.appendChild(img);
+    });
+  };
+
+  // ── SAVE ──
+  window.saveEntry = async () => {
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = '儲存中…';
+    try {
+      const photoFiles = document.getElementById('photo-input').files;
+      const photoURLs = [];
+      for (const file of photoFiles) {
+        const storageRef = ref(storage, `entries/${currentUser.uid}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        photoURLs.push(url);
+      }
+      await addDoc(collection(db, 'entries'), {
+        uid: currentUser.uid,
+        title: document.getElementById('entry-title').value.trim(),
+        content: document.getElementById('entry-content').value.trim(),
+        date: document.getElementById('entry-date').value,
+        mood: selectedMood,
+        location: document.getElementById('entry-location').value.trim(),
+        tags: currentTags,
+        photos: photoURLs,
+        isPrivate: document.getElementById('entry-private').checked,
+        createdAt: serverTimestamp(),
+      });
+      closeModal();
+      showToast('✦ 日記已儲存');
+      // reset form
+      ['entry-title','entry-content','entry-location'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('entry-private').checked = false;
+      await loadEntries();
+    } catch(e) {
+      showToast('儲存失敗：' + e.message);
+    }
+    btn.disabled = false; btn.textContent = '儲存日記';
+  };
+
+  // ── DELETE ──
+  window.deleteEntry = async (e, id) => {
+    e.stopPropagation();
+    if (!confirm('確定要刪除這篇日記嗎？')) return;
+    await deleteDoc(doc(db, 'entries', id));
+    showToast('已刪除');
+    await loadEntries();
+  };
+
+  window.toggleCard = (e, id) => { /* future: expand full view */ };
+
+  // ── TOAST ──
+  window.showToast = (msg) => {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  };
+</script>
+</body>
+</html>
